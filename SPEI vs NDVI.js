@@ -31,7 +31,7 @@
 var usstate = ee.FeatureCollection('ft:1fRY18cjsHzDgGiJiS2nnpUU3v9JPDc2HNaR7Xk8');//us state vector
 // var worldmap = ee.FeatureCollection('USDOS/LSIB_SIMPLE/2017'); //not political right, 
 // var worldmap = ee.FeatureCollection('users/fsn1995/UIA_World_Countries_Boundaries');
-var country = ['Spain'];//CHANGE the NAME of country here!
+// var country = ['Spain'];//CHANGE the NAME of country here!
 var state = ['California'];//CHANGE the NAME of us state here!
 
 // var countryshape = worldmap.filter(ee.Filter.inList('Country', country));// country 
@@ -44,8 +44,8 @@ Map.layers().add(roiLayer);//display roi
 // Map.setCenter(roiCentroid);
 
 // study time range
-var year_start = 2017;
-var year_end = 2018;
+var year_start = 1984;
+var year_end = 1994;
 var month_start = 1;
 var month_end = 12;
 
@@ -283,25 +283,70 @@ print('LUCC percentage', lucc_Piechart);
 // land assimulation system                                         //
 //////////////////////////////////////////////////////////////////////
 
-var spei = ee.ImageCollection('users/fsn1995/speical');
+// var spei = ee.ImageCollection('users/fsn1995/speical').filterBounds(roi);
+
+// print(spei,'spei');
+// var speiSet = ee.ImageCollection.fromImages(
+//     years.map(function (y) {
+//         return months.map(function (m) {
+//             var speiy = spei.select('b1')
+//                         .filter(ee.Filter.calendarRange(y, y, 'year'))
+//                         .filter(ee.Filter.calendarRange(m, m, 'month'))
+//                         .mean()
+//                         .rename('spei');
+//             return speiy.set('year', y)
+//                         .set('month', m);
+//         });    
+//     }).flatten()
+// );
+// print(speiSet,'speiSet');
+// // var speiSelect = speiSet.filterBounds(roi); error
+// var speiSelect = speiSet.filterMetadata('month','less_than',month_upper)
+//                         .filterMetadata('month','greater_than',month_lower);
+// print(speiSelect,'speiSelect');
+// var corrParams = {min: -2, max: 1, palette: ['red','white', 'green']};
+// Map.addLayer(speiSelect.select('spei'), corrParams, 'spei Map');
+
+
+
+
+
+
+
+
+// var NDVI_monthlyave = ee.ImageCollection.fromImages(
+//     years.map(function (y) {
+//         return months.map(function(m) {
+//             var vi = NDVI.filter(ee.Filter.calendarRange(y, y, 'year'))
+//                          .filter(ee.Filter.calendarRange(m, m, 'month'))
+//                          .mean()
+//                          .rename('NDVIm');
+//             return vi.set('year', y)
+//                      .set('month', m)
+//                      .set('system:time_start', ee.Date.fromYMD(y, m, 1));
+//         });
+//     }).flatten()
+// );
+
 
 var yearfilter = ee.Filter.equals({
-    leftField: 'year',
-    rightField: 'year',
+    leftField: 'system:time_start',
+    rightField: 'system:time_start',
 });
 var yearlink = ee.Join.saveFirst({
     matchKey: 'match',
 });
 
-
+// print(NDVI_anomaly_sum,'ndvi');
 var NDVI_spei = ee.ImageCollection(yearlink.apply(NDVI_anomaly_sum.select('NDVI_anomaly_sum'),
         spei.select('b1'),yearfilter))
         .map(function(image) {
             return image.addBands(image.get('match'));
         });
+print(NDVI_spei,'NDVI_spei');
 var corrmap = NDVI_spei.reduce(ee.Reducer.pearsonsCorrelation()).clip(roi)
-                     .addBands(lucc.select('landcover')
-                     .rename('lucc'));
+                    .addBands(lucc.select('landcover')
+                    .rename('lucc'));
 var corrParams = {min: -1, max: 1, palette: ['red','white', 'green']};
 Map.addLayer(corrmap.select('correlation'), corrParams, 'Correlation Map');
 
@@ -311,14 +356,14 @@ Export.image.toDrive({
   scale: 10000,
 //   region: roi
 });
-var options = {
-    // lineWidth: 1,
-    // pointSize: 2,
-    hAxis: {title: 'R and P value'},
-    vAxis: {title: 'Correlation Coefficient'},
-    title: 'Correlation map average'
-};
-var chart = ui.Chart.image.byClass(
-    corrmap, 'lucc', roi, ee.Reducer.mean(), 1000, lucc.get('landcover_class_names')
-).setOptions(options);  
-print(chart);
+// var options = {
+//     // lineWidth: 1,
+//     // pointSize: 2,
+//     hAxis: {title: 'R and P value'},
+//     vAxis: {title: 'Correlation Coefficient'},
+//     title: 'Correlation map average'
+// };
+// var chart = ui.Chart.image.byClass(
+//     corrmap, 'lucc', roi, ee.Reducer.mean(), 1000, lucc.get('landcover_class_names')
+// ).setOptions(options);  
+// print(chart);
