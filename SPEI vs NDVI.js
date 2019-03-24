@@ -2,8 +2,7 @@
 // This script will compute the monthly NDVI from Landsat imagery and     //
 // correlate with SPEI calculated from NOAH Global Land Assimulation      //
 // System data. It will display and export the correlation map of SPEI vs //
-// three months sum of NDVI anomalies. The spearson/pearson's correlation //
-// coefficiet R and P value can also be averaged by different land cover  //
+// three months sum of NDVI anomalies. (spearson/pearson's correlation)   //
 //------------------------------------------------------------------------//
 // This is part of a group work about drought analysis by MSc students in //
 // Department of Earth Sciences, Uppsala University:                      //
@@ -65,18 +64,6 @@ var months = ee.List.sequence(month_start, month_end);// time range of months
 //------------------------------------------------------------------------//
 
 // load landsat image
-// var surfaceReflectance4 = ee.ImageCollection('LANDSAT/LT04/C01/T1_SR')
-//     .filterDate('1982-01-01', '2018-10-01')
-//     .filterBounds(roi);
-// var surfaceReflectance5 = ee.ImageCollection('LANDSAT/LT05/C01/T1_SR')
-//     .filterDate('1984-01-01', '2018-10-01')
-//     .filterBounds(roi);
-// var surfaceReflectance7 = ee.ImageCollection('LANDSAT/LE07/C01/T1_SR')
-//     .filterDate('1999-01-01', '2018-10-01')
-//     .filterBounds(roi);   
-// var surfaceReflectance8 = ee.ImageCollection('LANDSAT/LC08/C01/T1_SR')
-//     .filterDate('2013-01-01', '2018-12-01')
-//     .filterBounds(roi);
 var surfaceReflectance4 = ee.ImageCollection('LANDSAT/LT04/C01/T1_SR')
     .filterDate(date_start, date_end)
     .filterBounds(roi);
@@ -240,68 +227,6 @@ var NDVI_anomaly_sum = ee.ImageCollection.fromImages(
 // Map.addLayer(speiSelect.select('spei'), corrParams, 'spei Map');
 // print(NDVI_anomaly_sum);
 
-
-//------------------------------------------------------------------//
-//LUCC: This part will import and display the lucc info in the study//
-//area                                                              //
-//------------------------------------------------------------------//
-
-// load lucc
-var lucc = ee.Image('ESA/GLOBCOVER_L4_200901_200912_V2_3').select('landcover').clip(roi);
-Map.addLayer(lucc, {}, 'Landcover');
-var lucc_pixelArea = ee.Image.pixelArea().addBands(lucc);
-var lucc_group = lucc_pixelArea.reduceRegion({
-    reducer: ee.Reducer.sum().group({
-        groupField: 1,
-        groupName: 'landcover_class_value'
-    }),
-    geometry: roi,
-    scale: 300,// meters
-    bestEffort: true,
-});
-// print('reduction_results', lucc_group);
-
-var lucc_names = ee.Dictionary.fromLists(
-    ee.List(lucc.get('landcover_class_values')).map(ee.String),
-    lucc.get('landcover_class_names')
-);
-print('lucc_names',lucc_names);
-var lucc_palette = ee.Dictionary.fromLists(
-    ee.List(lucc.get('landcover_class_values')).map(ee.String),
-    lucc.get('landcover_class_palette')
-);
-// Chart functions
-function createFeature(roi_class_stats) {
-    roi_class_stats = ee.Dictionary(roi_class_stats);
-    var class_number = roi_class_stats.get('landcover_class_value');
-    var result = {
-        lucc_class_number: class_number,
-        lucc_class_name: lucc_names.get(class_number),
-        lucc_class_palette: lucc_palette.get(class_number),
-        area_m2: roi_class_stats.get('sum')
-    };
-    return ee.Feature(null, result);
-}
-function createPieChartSliceDictionary(perc) {
-    return ee.List(perc.aggregate_array("lucc_class_palette"))
-             .map(function(p) { return {'color': p}; }).getInfo();
-}
-// pie chart of lucc summary
-var roi_stats = ee.List(lucc_group.get('groups'));
-var lucc_Pie = ee.FeatureCollection(roi_stats.map(createFeature));
-var lucc_Piechart = ui.Chart.feature.byFeature({
-    features: lucc_Pie,
-    xProperty: 'lucc_class_name',
-    yProperties: ['area_m2', 'lucc_class_number']
-})
-.setChartType('PieChart')
-.setOptions({
-    title: 'Land Cover Summary Chart',
-    slices: createPieChartSliceDictionary(lucc_Pie),
-    sliceVisibilityThreshold: 0
-});
-print('LUCC percentage', lucc_Piechart);
-
 //------------------------------------------------------------------//
 // This part compares NDVI anomalies with spei2m computed from NOAH //
 // Global land assimulation system                                  //
@@ -312,13 +237,6 @@ var speiSet = spei.map(function(image) {
   });
   
 // print(speiSet,'speiSet');
-
-// var speiSelect = speiSet.filterMetadata('month','less_than',month_upper)
-//                         .filterMetadata('month','greater_than',month_lower);
-// print(speiSelect,'speiSelect');
-// var corrParams = {min: -2, max: 1, palette: ['red','white', 'green']};
-// Map.addLayer(speiSelect.select('spei'), corrParams, 'spei Map');
-
 
 var yearfilter = ee.Filter.equals({
     leftField: 'system:time_start',
@@ -349,14 +267,3 @@ Export.image.toDrive({
   scale: 10000,
 //   region: roi
 });
-// var options = {
-//     // lineWidth: 1,
-//     // pointSize: 2,
-//     hAxis: {title: 'R and P value'},
-//     vAxis: {title: 'Correlation Coefficient'},
-//     title: 'Correlation map average'
-// };
-// var chart = ui.Chart.image.byClass(
-//     corrmap, 'lucc', roi, ee.Reducer.mean(), 10000, lucc.get('landcover_class_names')
-// ).setOptions(options);  
-// print(chart);
