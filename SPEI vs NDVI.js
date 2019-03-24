@@ -13,7 +13,7 @@
 ////////////////////////////////////////////////////////////////////////////
 
 // NOTE
-// The correlation map can only be displayed for the period of 1984-2004 in console
+// The correlation map can be displayed for the period of 1984-2004 in console
 // Longer period must be exported through task
 
 // note to myself:
@@ -23,7 +23,7 @@
 // Time lag and month gaps of ndvi
 
 //------------------------------------------------------------------------//
-//                          Preparation                                   //
+//                             Preparation                                //
 //------------------------------------------------------------------------//
 
 
@@ -337,25 +337,26 @@ var NDVI_spei = ee.ImageCollection(yearlink.apply(NDVI_anomaly_sum.select('NDVI_
         });
 // print(NDVI_spei,'NDVI_spei');
 var corrmap = NDVI_spei.reduce(ee.Reducer.pearsonsCorrelation()).clip(roi);
+// var corrmap = NDVI_spei.reduce(ee.Reducer.spearmansCorrelation()).clip(roi);
                     // .addBands(lucc.select('landcover')
                     // .rename('lucc'));
 var corrParams = {min: -1, max: 1, palette: ['red','white', 'green']};
 Map.addLayer(corrmap.select('correlation'), corrParams, 'Correlation Map');
 
-// Export.image.toDrive({
-//   image: corrmap,
-//   description: 'Correlation map of monthly NDVI and water balance',
-//   scale: 10000,
-// //   region: roi
-// });
-var options = {
-    // lineWidth: 1,
-    // pointSize: 2,
-    hAxis: {title: 'R and P value'},
-    vAxis: {title: 'Correlation Coefficient'},
-    title: 'Correlation map average'
-};
-var chart = ui.Chart.image.byClass(
-    corrmap, 'lucc', roi, ee.Reducer.mean(), 10000, lucc.get('landcover_class_names')
-).setOptions(options);  
-print(chart);
+Export.image.toDrive({
+  image: corrmap,
+  description: 'Correlation map of monthly NDVI and water balance',
+  scale: 10000,
+//   region: roi
+});
+// var options = {
+//     // lineWidth: 1,
+//     // pointSize: 2,
+//     hAxis: {title: 'R and P value'},
+//     vAxis: {title: 'Correlation Coefficient'},
+//     title: 'Correlation map average'
+// };
+// var chart = ui.Chart.image.byClass(
+//     corrmap, 'lucc', roi, ee.Reducer.mean(), 10000, lucc.get('landcover_class_names')
+// ).setOptions(options);  
+// print(chart);

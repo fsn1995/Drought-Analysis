@@ -13,9 +13,7 @@
 ////////////////////////////////////////////////////////////////////////////
 
 // NOTE!
-// The process of NOAH takes too much computation resource so the study time 
-// is limited to recent years (2013-2018); This won't be a problem when comapring 
-// spei with ndvi.
+// some error spotted, remains to be solved
 
 // note to myself:
 // lucc class name on correlation chart needs to be corrected
@@ -28,7 +26,7 @@
 ////////////////////////////////////////////////////////////////////////////
 
 // var worldmap = ee.FeatureCollection('ft:1tdSwUL7MVpOauSgRzqVTOwdfy17KDbw-1d9omPw');//world vector
-// var usstate = ee.FeatureCollection('ft:1fRY18cjsHzDgGiJiS2nnpUU3v9JPDc2HNaR7Xk8');//us state vector
+var usstate = ee.FeatureCollection('ft:1fRY18cjsHzDgGiJiS2nnpUU3v9JPDc2HNaR7Xk8');//us state vector
 // var worldmap = ee.FeatureCollection('USDOS/LSIB_SIMPLE/2017'); //not political right, 
 // var worldmap = ee.FeatureCollection('users/fsn1995/UIA_World_Countries_Boundaries');
 var country = ['Spain'];//CHANGE the NAME of country here!
@@ -44,7 +42,7 @@ Map.layers().add(roiLayer);//display roi
 // Map.setCenter(roiCentroid);
 
 // study time range
-var year_start = 1984;
+var year_start = 2016;
 var year_end = 2018;
 var month_start = 1;
 var month_end = 12;
@@ -55,8 +53,8 @@ var years = ee.List.sequence(year_start, year_end);// time range of years
 var months = ee.List.sequence(month_start, month_end);// time range of months
 // next step is to define the months of ndvi anomal calculation
 // var month_anomaly = ee.List.sequence(3,5);// March to May
-var month_upper = 8;// April to June
-var month_lower = 4;
+// var month_upper = 8;// April to June
+// var month_lower = 4;
 
 ////////////////////////////////////////////////////////////////////////////
 //                                 NDVI                                   //
@@ -64,13 +62,17 @@ var month_lower = 4;
 
 // load landsat image
 var surfaceReflectance4 = ee.ImageCollection('LANDSAT/LT04/C01/T1_SR')
-    .filterDate('1982-01-01', '2018-10-01');
+    .filterDate(date_start, date_end)
+    .filterBounds(roi);
 var surfaceReflectance5 = ee.ImageCollection('LANDSAT/LT05/C01/T1_SR')
-    .filterDate('1984-01-01', '2018-10-01');
+    .filterDate(date_start, date_end)
+    .filterBounds(roi);
 var surfaceReflectance7 = ee.ImageCollection('LANDSAT/LE07/C01/T1_SR')
-    .filterDate('1999-01-01', '2018-10-01');   
+    .filterDate(date_start, date_end)
+    .filterBounds(roi);   
 var surfaceReflectance8 = ee.ImageCollection('LANDSAT/LC08/C01/T1_SR')
-    .filterDate('2013-01-01', '2018-12-01');
+    .filterDate(date_start, date_end)
+    .filterBounds(roi);
 var surfaceReflectance457 = surfaceReflectance4.merge(surfaceReflectance5).merge(surfaceReflectance7);
 
 // // cloud/snow/water mask
@@ -130,10 +132,10 @@ var L457ndvi = surfaceReflectance457
 
 // merge L8 L457 NDVI
 var landsatndvi = L8ndvi.merge(L457ndvi);
-var NDVI = landsatndvi.filterDate(date_start, date_end)
-                      .sort('system:time_start', false)
-                      .select('NDVI');
-// get the list of image dates
+// var NDVI = landsatndvi.filterDate(date_start, date_end)
+//                       .sort('system:time_start', false)
+//                       .select('NDVI');
+// // get the list of image dates
 // var date_all = NDVI.map(function(image) {
 //     return image.set('date', image.date());
 // });
@@ -142,23 +144,24 @@ var NDVI = landsatndvi.filterDate(date_start, date_end)
 // print(datelist);
 
 // monthly average NDVI
-// sytstem time is set as 15th of each month
+// sytstem time is set as 1st of each month
 var NDVI_monthlyave = ee.ImageCollection.fromImages(
     years.map(function (y) {
         return months.map(function(m) {
-            var vi = NDVI.filter(ee.Filter.calendarRange(y, y, 'year'))
-                         .filter(ee.Filter.calendarRange(m, m, 'month'))
-                         .mean()
-                         .rename('NDVIm');
+            var vi = landsatndvi.filter(ee.Filter.calendarRange(y, y, 'year'))
+                                .filter(ee.Filter.calendarRange(m, m, 'month'))
+                                .mean()
+                                .log()
+                                .rename('NDVIm');
             return vi.set('year', y)
                      .set('month', m)
-                     .set('system:time_start', ee.Date.fromYMD(y, m, 15));
+                     .set('system:time_start', ee.Date.fromYMD(y, m, 1));
         });
     }).flatten()
 );
-var NDVIfiltered = NDVI_monthlyave.filterMetadata('month','less_than',month_upper)
-                             .filterMetadata('month','greater_than',month_lower);
-// print(NDVI_monthlyave);
+// var NDVIfiltered = NDVI_monthlyave.filterMetadata('month','less_than',month_upper)
+//                              .filterMetadata('month','greater_than',month_lower);
+print(NDVI_monthlyave);
 
 //////////////////////////////////////////////////////////////////////
 //LUCC: This part will import and display the lucc info in the study//
@@ -236,8 +239,8 @@ var climate2 = ee.ImageCollection('NASA/GLDAS/V021/NOAH/G025/T3H')
     .filterBounds(roi);
 var climate = climate1.merge(climate2)
     .filter(ee.Filter.date(date_start, date_end));
-var rain = climate.select('Rainf_f_tavg');
-var evap = climate.select('Evap_tavg');
+// var rain = climate.select('Rainf_f_tavg');
+// var evap = climate.select('Evap_tavg');
 var addRain_mm = function(image) {
     var Rain_mm = image.expression(
         'b1 / 997 * 86400 / 8 * 100',// unit coversion
@@ -256,8 +259,8 @@ var addEvap_mm = function(image) {
     ).rename('Evap_mm');
     return image.addBands(Evap_mm);
 };
-var rain = rain.map(addRain_mm);
-var evap = evap.map(addEvap_mm);
+var rain = climate.map(addRain_mm);
+var evap = climate.map(addEvap_mm);
 
 var rain_monthlysum = ee.ImageCollection.fromImages(
     years.map(function (y) {
@@ -269,7 +272,7 @@ var rain_monthlysum = ee.ImageCollection.fromImages(
                          .rename('rainm');
             return vi.set('year', y)
                      .set('month', m)
-                     .set('system:time_start', ee.Date.fromYMD(y, m, 15));
+                     .set('system:time_start', ee.Date.fromYMD(y, m, 1));
         });
     }).flatten()
 );
@@ -285,7 +288,7 @@ var evap_monthlysum = ee.ImageCollection.fromImages(
                          .rename('evapm');
             return vi.set('year', y)
                      .set('month', m)
-                     .set('system:time_start', ee.Date.fromYMD(y, m, 15));
+                     .set('system:time_start', ee.Date.fromYMD(y, m, 1));
         });
     }).flatten()
 );
@@ -303,8 +306,8 @@ var climate_monthlink = ee.ImageCollection(monthlink.apply(evap_monthlysum,rain_
     .map(function(image) {
         return image.addBands(image.get('match'));
     });
-var climate_filtered = climate_monthlink.filterMetadata('month','less_than',month_upper)
-                                        .filterMetadata('month','greater_than',month_lower);
+// var climate_filtered = climate_monthlink.filterMetadata('month','less_than',month_upper)
+//                                         .filterMetadata('month','greater_than',month_lower);
 var waterbalance = climate_monthlink.map(function(image) {
     return image.addBands(image.select('rainm')
                                .subtract(image.select('evapm'))
@@ -319,14 +322,14 @@ var monthfilter = ee.Filter.equals({
     leftField: 'system:time_start',
     rightField: 'system:time_start',
 });
-var NDVI_WB = ee.ImageCollection(monthlink.apply(NDVIfiltered.select('NDVIm'),
+var NDVI_WB = ee.ImageCollection(monthlink.apply(NDVI_monthlyave.select('NDVIm'),
         waterbalance.select('wb'),monthfilter))
         .map(function(image) {
             return image.addBands(image.get('match'));
         });
-var corrmap = NDVI_WB.reduce(ee.Reducer.pearsonsCorrelation()).clip(roi)
-                     .addBands(lucc.select('landcover')
-                     .rename('lucc'));
+var corrmap = NDVI_WB.reduce(ee.Reducer.pearsonsCorrelation()).clip(roi);
+                    //  .addBands(lucc.select('landcover')
+                    //  .rename('lucc'));
 var corrParams = {min: -1, max: 1, palette: ['red','white', 'green']};
 Map.addLayer(corrmap.select('correlation'), corrParams, 'Correlation Map');
 
@@ -336,14 +339,14 @@ Export.image.toDrive({
   scale: 10000,
 //   region: roi
 });
-var options = {
-    // lineWidth: 1,
-    // pointSize: 2,
-    hAxis: {title: 'R and P value'},
-    vAxis: {title: 'Correlation Coefficient'},
-    title: 'Correlation map average'
-};
-var chart = ui.Chart.image.byClass(
-    corrmap, 'lucc', roi, ee.Reducer.mean(), 1000, lucc.get('landcover_class_names')
-).setOptions(options);  
-print(chart);
+// var options = {
+//     // lineWidth: 1,
+//     // pointSize: 2,
+//     hAxis: {title: 'R and P value'},
+//     vAxis: {title: 'Correlation Coefficient'},
+//     title: 'Correlation map average'
+// };
+// var chart = ui.Chart.image.byClass(
+//     corrmap, 'lucc', roi, ee.Reducer.mean(), 1000, lucc.get('landcover_class_names')
+// ).setOptions(options);  
+// print(chart);
