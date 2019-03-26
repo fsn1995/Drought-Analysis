@@ -17,7 +17,8 @@ downloading data from earthdata.nasa.gov
 It exports and displays the correlation map of monthly SPEI vs the sum of coming three-month NDVI anomalies. The example in this script is California, 1984-2018. For the access to SPEI, please contact us.
 4. Corrmap Display with lucc
 The correlation map exported to GEE asset from SEPI vs NDVI.js could be diaplayed and analyzed in this script. R and P values would be reported by different land cover.
-
+5. SPEI 2m Cal https://code.earthengine.google.com/?asset=users/felipef93/SPEI_CAL
+6. SPEI 3m Cal https://code.earthengine.google.com/?asset=users/felipef93/SPEI_CAL_3m
 
 
 References
