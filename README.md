@@ -1,15 +1,13 @@
 # Drought Analysis
 
-This is an unpublished ongoing student project of drought analysis using Google Earth Engine (GEE). This is part of a group work about drought analysis by MSc students in Department of Earth Sciences, Uppsala University:
-de Mendonça Fileni, Felipe; Erikson, Torbjörn-Johannes; Feng, Shunan   
+This is an unpublished ongoing student project of drought analysis using Google Earth Engine (GEE).  
+This is part of a group work about drought analysis by MSc students in Department of Earth Sciences, Uppsala University: de Mendonça Fileni, Felipe; Erikson, Torbjörn-Johannes; Feng, Shunan    
 Supervisor: Pettersson, Rickard; Winterdahl, Mattias                   
 
 Preliminary results will be presented during EGU general assembly 2019 in Vienna.  
-Contact:  
-Shunan Feng: fsn.1995@gmail.com  
 ![screenshot](pic/interface.png)
 ## 1. SPEI preparation
-SPEI is computed using the R package: Beguería S. (2017) SPEIbase: R code used in generating the SPEI global database, [doi:10.5281/zenodo.834462](https://github.com/fsn1995/PythonFSN/blob/master/EarthdataDownload.py).
+SPEI is computed using the R package: Beguería S. (2017) SPEIbase: R code used in generating the SPEI global database, [doi:10.5281/zenodo.834462](https://github.com/sbegueria/SPEIbase).
 The 0.25 degree NOAH data is downloaded by from earthdata.nasa.gov by using [EarthdataDownload.py](https://github.com/fsn1995/PythonFSN/blob/master/EarthdataDownload.py). 
 Note: 
 - NOAH data is in a different format as the input required by SPEIbase, the suggestion is to convert it to the same format as the data used in the SPEI template.
