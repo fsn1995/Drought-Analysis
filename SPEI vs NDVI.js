@@ -13,7 +13,8 @@
 
 // NOTE
 // The correlation map can be displayed for the period of 1984-2004 in console
-// Longer period must be exported through task
+// Longer period must be exported through task, (normally will take 1 hour for 
+// 40-year calculation 
 
 // note to myself:
 // lucc class name on correlation chart needs to be corrected
@@ -77,7 +78,8 @@ var surfaceReflectance8 = ee.ImageCollection('LANDSAT/LC08/C01/T1_SR')
     .filterDate(date_start, date_end)
     .filterBounds(roi);
 var surfaceReflectance457 = surfaceReflectance4.merge(surfaceReflectance5).merge(surfaceReflectance7);
-var spei = ee.ImageCollection("users/felipef93/SPEI_CAL").filterBounds(roi);
+// var spei = ee.ImageCollection("users/felipef93/SPEI_CAL").filterBounds(roi);
+var spei = ee.ImageCollection("users/felipef93/SPEI_CAL_3m").filterBounds(roi);
 
 // // cloud/snow/water mask
 // pixel_qa contains fmask information: 
@@ -264,6 +266,6 @@ Map.addLayer(corrmap.select('correlation'), corrParams, 'Correlation Map');
 Export.image.toDrive({
   image: corrmap,
   description: 'Correlation map of monthly NDVI and water balance',
-  scale: 10000,
+  scale: 1000,
 //   region: roi
 });

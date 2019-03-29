@@ -5,6 +5,11 @@
 // console                                                                 //
 /////////////////////////////////////////////////////////////////////////////
 
+// Note:
+// The default landcover data is NLCD: USGS National Land Cover Database 2011,
+// alternative global landcover from ESA is also tested. (Uncomment the line importing lucc)
+
+
 //-------------------------------------------------------------------------//
 //                                  roi                                    //
 //-------------------------------------------------------------------------//
@@ -29,7 +34,8 @@ Map.layers().add(roiLayer);//display roi
 // LUCC: This part will import and display the lucc info in the study area //
 //-------------------------------------------------------------------------//
 
-var lucc = ee.Image('ESA/GLOBCOVER_L4_200901_200912_V2_3').select('landcover').clip(roi);
+// var lucc = ee.Image('ESA/GLOBCOVER_L4_200901_200912_V2_3').select('landcover').clip(roi);
+var lucc = ee.Image('USGS/NLCD/NLCD2011').select('landcover').clip(roi);
 Map.addLayer(lucc, {}, 'Landcover');
 var lucc_pixelArea = ee.Image.pixelArea().addBands(lucc);
 var lucc_group = lucc_pixelArea.reduceRegion({
