@@ -106,6 +106,6 @@ var options = {
     title: 'Correlation map average'
 };
 var chart = ui.Chart.image.byClass(
-    corrmap, 'lucc', roi, ee.Reducer.mean(), 1000, lucc.get('landcover_class_names')
+    corrmap, 'lucc', roi, ee.Reducer.intervalMean(0,100)//, 1000, lucc.get('landcover_class_names')
 ).setOptions(options);  
 print(chart);
