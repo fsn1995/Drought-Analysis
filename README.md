@@ -4,9 +4,9 @@ This is an unpublished ongoing student project of drought analysis using Google 
 de Mendonça Fileni, Felipe; Erikson, Torbjörn-Johannes; Feng, Shunan   
 Supervisor: Pettersson, Rickard; Winterdahl, Mattias                   
 
-Preliminary results will be presented during EGU general assembly 2019 in Vienna.
-Contact:
-Shunan Feng: fsn.1995@gmail.com
+Preliminary results will be presented during EGU general assembly 2019 in Vienna.  
+Contact:  
+Shunan Feng: fsn.1995@gmail.com  
 ![screenshot](pic/interface.png)
 ## 1. SPEI preparation
 SPEI is computed using the R package: Beguería S. (2017) SPEIbase: R code used in generating the SPEI global database, [doi:10.5281/zenodo.834462](https://github.com/fsn1995/PythonFSN/blob/master/EarthdataDownload.py).
