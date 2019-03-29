@@ -30,7 +30,6 @@
 // var worldmap = ee.FeatureCollection('ft:1tdSwUL7MVpOauSgRzqVTOwdfy17KDbw-1d9omPw');//world vector
 var usstate = ee.FeatureCollection('ft:1fRY18cjsHzDgGiJiS2nnpUU3v9JPDc2HNaR7Xk8');//us state vector
 // var worldmap = ee.FeatureCollection('USDOS/LSIB_SIMPLE/2017'); //not political right, 
-// var worldmap = ee.FeatureCollection('users/fsn1995/UIA_World_Countries_Boundaries');
 // var country = ['Spain'];//CHANGE the NAME of country here!
 var state = ['California'];//CHANGE the NAME of us state here!
 
@@ -45,7 +44,7 @@ Map.layers().add(roiLayer);//display roi
 
 // study time range
 var year_start = 1984;
-var year_end = 2004;
+var year_end = 2018;
 // month range of ndvi anomalies (May to July)
 var month_start = 5;
 var month_end = 7;
