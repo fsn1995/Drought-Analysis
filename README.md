@@ -4,7 +4,7 @@ This is an unpublished ongoing student project of drought analysis using Google 
 This is part of a group work about drought analysis by MSc students in Department of Earth Sciences, Uppsala University: de Mendonça Fileni, Felipe; Erikson, Torbjörn-Johannes; Feng, Shunan    
 Supervisor: Pettersson, Rickard; Winterdahl, Mattias                   
 
-Preliminary results will be presented during EGU general assembly 2019 in Vienna. [EGU 2019-1937](https://github.com/fsn1995/Drought-Analysis/blob/master/doc/EGU2019-19137_Drought%20Analysis.pdf)  
+Preliminary results will be presented during EGU general assembly 2019 in Vienna. [EGU 2019-19137](https://github.com/fsn1995/Drought-Analysis/blob/master/doc/EGU2019-19137_Drought%20Analysis.pdf)  
 ![screenshot](pic/interface.png)
 ## 1. SPEI preparation
 SPEI is computed using the R package: Beguería S. (2017) SPEIbase: R code used in generating the SPEI global database, [doi:10.5281/zenodo.834462](https://github.com/sbegueria/SPEIbase).
