@@ -1,4 +1,5 @@
 # Drought Analysis
+[![DOI](https://zenodo.org/badge/173935948.svg)](https://zenodo.org/badge/latestdoi/173935948)
 
 This is an unpublished ongoing student project of drought analysis using Google Earth Engine (GEE).    
 This is part of a group work about drought analysis by MSc students in Department of Earth Sciences, Uppsala University: de Mendonça Fileni, Felipe; Erikson, Torbjörn-Johannes; Feng, Shunan    
