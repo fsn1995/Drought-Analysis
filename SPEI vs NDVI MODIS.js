@@ -1,49 +1,36 @@
 ////////////////////////////////////////////////////////////////////////////
-// This script will compute the monthly NDVI from Landsat imagery and     //
+// This script uses MODIS 1km NDVI product and it is spatially            //
 // correlate with SPEI calculated from NOAH Global Land Assimulation      //
 // System data. It will display and export the correlation map of SPEI vs //
 // three months sum of NDVI anomalies. (spearson/pearson's correlation)   //
 //------------------------------------------------------------------------//
-// This is part of a group work about drought analysis by MSc students in //
-// Department of Earth Sciences, Uppsala University:                      //
-// de Mendonça Fileni, Felipe; Erikson, Torbjörn-Johannes; Feng, Shunan   //                                                                         //
-// Supervisor: Pettersson, Rickard; Winterdahl, Mattias                   //
+// For fast global study                                                  //
 // Contact: Shunan Feng (冯树楠): fsn.1995@gmail.com                      //
 ////////////////////////////////////////////////////////////////////////////
 
-// NOTE
-// The correlation map can be displayed for the period of 1984-2004 in console
-// Longer period must be exported through task, (normally will take 1 hour for 
-// 40-year calculation 
-
-// note to myself:
-// lucc class name on correlation chart needs to be corrected
-// lucc class should be simplified
-// SPEI could be uploaded once it is done and correlate it with NDVI 
-// Time lag and month gaps of ndvi
 
 //------------------------------------------------------------------------//
 //                             Preparation                                //
 //------------------------------------------------------------------------//
 
 
-// var worldmap = ee.FeatureCollection('ft:1tdSwUL7MVpOauSgRzqVTOwdfy17KDbw-1d9omPw');//world vector
-var usstate = ee.FeatureCollection('ft:1fRY18cjsHzDgGiJiS2nnpUU3v9JPDc2HNaR7Xk8');//us state vector
-// var worldmap = ee.FeatureCollection('USDOS/LSIB_SIMPLE/2017'); //not political right, 
-// var country = ['Spain'];//CHANGE the NAME of country here!
-var state = ['California'];//CHANGE the NAME of us state here!
+// // var worldmap = ee.FeatureCollection('ft:1tdSwUL7MVpOauSgRzqVTOwdfy17KDbw-1d9omPw');//world vector
+// var usstate = ee.FeatureCollection('ft:1fRY18cjsHzDgGiJiS2nnpUU3v9JPDc2HNaR7Xk8');//us state vector
+// // var worldmap = ee.FeatureCollection('USDOS/LSIB_SIMPLE/2017'); //not political right, 
+// // var country = ['Spain'];//CHANGE the NAME of country here!
+// var state = ['California'];//CHANGE the NAME of us state here!
 
-// var countryshape = worldmap.filter(ee.Filter.inList('Country', country));// country 
-var stateshape = usstate.filter(ee.Filter.inList('Name', state));// us state
-// var roi = countryshape.geometry();// country 
-var roi = stateshape.geometry();// us state
-var roiLayer = ui.Map.Layer(roi, {color: 'FF0000'}, 'roi');
-// var roiCentroid = roi.centroid();
-Map.layers().add(roiLayer);//display roi
-// Map.setCenter(roiCentroid);
+// // var countryshape = worldmap.filter(ee.Filter.inList('Country', country));// country 
+// var stateshape = usstate.filter(ee.Filter.inList('Name', state));// us state
+// // var roi = countryshape.geometry();// country 
+// var roi = stateshape.geometry();// us state
+// var roiLayer = ui.Map.Layer(roi, {color: 'FF0000'}, 'roi');
+// // var roiCentroid = roi.centroid();
+// Map.layers().add(roiLayer);//display roi
+// // Map.setCenter(roiCentroid);
 
 // study time range
-var year_start = 1984;
+var year_start = 2000;
 var year_end = 2018;
 // month range of ndvi anomalies (May to July)
 // var month_start = 5;
@@ -66,83 +53,11 @@ var months = ee.List.sequence(month_start, month_end);// time range of months
 //------------------------------------------------------------------------//
 
 // load landsat image
-var surfaceReflectance4 = ee.ImageCollection('LANDSAT/LT04/C01/T1_SR')
+var ndvi = ee.ImageCollection('MODIS/006/MOD13A2')
     .filterDate(date_start, date_end)
-    .filterBounds(roi);
-var surfaceReflectance5 = ee.ImageCollection('LANDSAT/LT05/C01/T1_SR')
-    .filterDate(date_start, date_end)
-    .filterBounds(roi);
-var surfaceReflectance7 = ee.ImageCollection('LANDSAT/LE07/C01/T1_SR')
-    .filterDate(date_start, date_end)
-    .filterBounds(roi);   
-var surfaceReflectance8 = ee.ImageCollection('LANDSAT/LC08/C01/T1_SR')
-    .filterDate(date_start, date_end)
-    .filterBounds(roi);
-var surfaceReflectance457 = surfaceReflectance4.merge(surfaceReflectance5).merge(surfaceReflectance7);
-// var spei = ee.ImageCollection("users/felipef93/SPEI_CAL").filterBounds(roi);
-var spei = ee.ImageCollection("users/felipef93/SPEI_CAL_3m").filterBounds(roi);
+    .select('NDVI');
 
-// // cloud/snow/water mask
-// pixel_qa contains fmask information: 
-// bit 0: fill, bit 1: clear, bit 2: water, 
-// bit 3: cloud shadow, bit 4: snow/ice bit 5: cloud
-// fmask for surfaceReflectance8
-var fmaskL8sr = function(image) {
-    var cloudShadowBitmask = 1 << 3;
-    var cloudsBitMask = 1 << 5;
-    var waterBitmask = 1 << 2;
-    var snowBitmask = 1 << 4;
-    // QA band pixel value
-    var qa = image.select('pixel_qa');
-    // set cloud and shadows to 0
-    var mask = qa.bitwiseAnd(cloudShadowBitmask).eq(0)
-        .and(qa.bitwiseAnd(cloudsBitMask).eq(0))
-        .and(qa.bitwiseAnd(waterBitmask).eq(0))
-        .and(qa.bitwiseAnd(snowBitmask).eq(0));
-    return image.updateMask(mask);
-};
-// fmask for surfaceRflectance457
-var fmaskL457 = function(image) {
-    var qa = image.select('pixel_qa');
-    // If the cloud bit (5) is set and the cloud confidence (7) is high
-    // or the cloud shadow bit is set (3), then it's a bad pixel. (GEE example)
-    var maskband = qa.bitwiseAnd(1 << 5)
-            .and(qa.bitwiseAnd(1 << 7))
-            .or(qa.bitwiseAnd(1 << 3))
-            .and(qa.bitwiseAnd(1 << 2))
-            .and(qa.bitwiseAnd(1 << 4));
-    // Remove edge pixels that don't occur in all bands
-    var mask2 = image.mask().reduce(ee.Reducer.min());
-    return image.updateMask(maskband.not()).updateMask(mask2);
-};
-
-// NDVI computation [-1 1]
-var addNDVI457 = function(image) {
-    var ndvi457 = image.normalizedDifference(['B4', 'B3']).rename('NDVI');
-    return image.addBands(ndvi457);
-};
-var addNDVI8 = function(image) {
-    var ndvi8 = image.normalizedDifference(['B5', 'B4']).rename('NDVI');
-    return image.addBands(ndvi8);
-};
-
-// add cloud masked ndvi band
-
-var L8ndvi = surfaceReflectance8
-    .filter(ee.Filter.calendarRange(month_start, month_end, 'month'))
-    .map(fmaskL8sr)
-    .map(addNDVI8);
-
-var L457ndvi = surfaceReflectance457
-    .filter(ee.Filter.calendarRange(month_start, month_end, 'month'))
-    .map(fmaskL457)
-    .map(addNDVI457);
-
-// merge L8 L457 NDVI
-var landsatndvi = L8ndvi.merge(L457ndvi);
-// var NDVI = landsatndvi.filterDate(date_start, date_end)
-//                       .sort('system:time_start', false)
-//                       .select('NDVI');
+var spei = ee.ImageCollection("users/fsn1995/spei3m_noah");
 
 
 // monthly average NDVI
@@ -150,7 +65,7 @@ var landsatndvi = L8ndvi.merge(L457ndvi);
 var NDVI_monthlyave = ee.ImageCollection.fromImages(
     years.map(function (y) {
         return months.map(function(m) {
-            var vi = landsatndvi.select('NDVI')
+            var vi = ndvi.select('NDVI')
                                 .filter(ee.Filter.calendarRange(y, y, 'year'))
                                 .filter(ee.Filter.calendarRange(m, m, 'month'))
                                 .mean()
@@ -162,7 +77,7 @@ var NDVI_monthlyave = ee.ImageCollection.fromImages(
     }).flatten()
 );
 
-// 30yr monthly average NDVI
+// 20yr monthly average NDVI
 var NDVI_30yrave = ee.ImageCollection.fromImages(
     months.map(function (m) {
         var vi = NDVI_monthlyave.filter(ee.Filter.eq('month', m))
@@ -257,7 +172,7 @@ var NDVI_spei = ee.ImageCollection(yearlink.apply(NDVI_anomaly_sum.select('NDVI_
             return image.addBands(image.get('match'));
         });
 // print(NDVI_spei,'NDVI_spei');
-var corrmap = NDVI_spei.reduce(ee.Reducer.pearsonsCorrelation()).clip(roi);
+var corrmap = NDVI_spei.reduce(ee.Reducer.pearsonsCorrelation());
 // var corrmap = NDVI_spei.reduce(ee.Reducer.spearmansCorrelation()).clip(roi);
                     // .addBands(lucc.select('landcover')
                     // .rename('lucc'));
