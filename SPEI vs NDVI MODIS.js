@@ -31,7 +31,7 @@ var roi = worldmap.geometry();// country
 // // Map.setCenter(roiCentroid);
 
 // study time range
-var year_start = 2001;
+var year_start = 2001; //  MODIS NDVI 2000-02-18T00:00:00 - Present
 var year_end = 2018;
 // month range of ndvi anomalies (May to July)
 // var month_start = 5;
@@ -47,7 +47,7 @@ var date_end = ee.Date.fromYMD(year_end, 12, 31);
 var years = ee.List.sequence(year_start, year_end);// time range of years
 var months = ee.List.sequence(month_start, month_end);// time range of months
 
-
+var lagflag = -1; // change the month lag here, e.g. no lag is 0, -1 is one month lag
 //------------------------------------------------------------------------//
 //                               Datainput                                //
 //------------------------------------------------------------------------//
@@ -129,6 +129,12 @@ var NDVI_anomaly = NDVI_monthlink.map(addNDVI_anomaly);
 //------------------------------------------------------------------------//
 // lag is achieved by shifting the date of the data
 
+var addLagm = function(image) {
+    var lagm = ee.Date(image.get('system:time_start')).advance(lagflag,'month');
+    return image.set({'lagm': lagm});
+};
+
+// below is to compute ndvi three month anomaly
 var addLag0m = function(image) {
     var lagm = ee.Date(image.get('system:time_start')).advance(0,'month');
     return image.set({'lagm': lagm});
@@ -141,26 +147,6 @@ var addLag1m = function(image) {
 
 var addLag2m = function(image) {
     var lagm = ee.Date(image.get('system:time_start')).advance(-2,'month');
-    return image.set({'lagm': lagm});
-};
-
-var addLag3m = function(image) {
-    var lagm = ee.Date(image.get('system:time_start')).advance(-3,'month');
-    return image.set({'lagm': lagm});
-};
-
-var addLag4m = function(image) {
-    var lagm = ee.Date(image.get('system:time_start')).advance(-4,'month');
-    return image.set({'lagm': lagm});
-};
-
-var addLag5m = function(image) {
-    var lagm = ee.Date(image.get('system:time_start')).advance(-5,'month');
-    return image.set({'lagm': lagm});
-};
-
-var addLag6m = function(image) {
-    var lagm = ee.Date(image.get('system:time_start')).advance(-6,'month');
     return image.set({'lagm': lagm});
 };
 
@@ -201,7 +187,7 @@ var NDVI_anomaly_sum = NDVI_threeMonthAnomaly.map(function(image) {
 });
 
 // change the lag of ndvi anomaly sum here!!!
-var NDVI_anomSumMLag = NDVI_anomaly_sum.select('NDVI_anomalySum').map(addLag3m);
+var NDVI_anomSumMLag = NDVI_anomaly_sum.select('NDVI_anomalySum').map(addLagm);
 
 
 //------------------------------------------------------------------//
