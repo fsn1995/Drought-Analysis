@@ -55,3 +55,6 @@ Discarded personal practice withspatial correlation of water balance(NOAH 0.25 d
 - Sazib, N., Mladenova, I., Bolten, J., 2018. Leveraging the google earth engine for drought assessment using global soil moisture data. Remote Sensing 10. https://doi.org/10.3390/rs10081265  
 
 Fileni, F., Feng, S., Erikson., T, Winterdahl, M., Pettersson, R., 2019. Spatial and temporal analysis of vegetation response to meteorological droughts in California, 1984-2018
+
+## update 20190718
+updates in computing ndvi anomalies. fast global scale study using MODIS product.
