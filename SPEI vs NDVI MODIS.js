@@ -13,23 +13,6 @@
 //                             Preparation                                //
 //------------------------------------------------------------------------//
 
-
-var worldmap = ee.FeatureCollection('ft:1tdSwUL7MVpOauSgRzqVTOwdfy17KDbw-1d9omPw');//world vector
-// var usstate = ee.FeatureCollection('ft:1fRY18cjsHzDgGiJiS2nnpUU3v9JPDc2HNaR7Xk8');//us state vector
-// // var worldmap = ee.FeatureCollection('USDOS/LSIB_SIMPLE/2017'); //not political right, 
-// // var country = ['Spain'];//CHANGE the NAME of country here!
-// var state = ['California'];//CHANGE the NAME of us state here!
-// var worldmap = ee.FeatureCollection('ft:1Ec8IWsP8asxN-ywSqgXWMuBaxI6pPaeh6hC64lA');//world vector
-
-// var countryshape = worldmap.filter(ee.Filter.inList('Country', country));// country 
-// var stateshape = usstate.filter(ee.Filter.inList('Name', state));// us state
-var roi = worldmap.geometry();// country 
-// var roi = stateshape.geometry();// us state
-// var roiLayer = ui.Map.Layer(roi, {color: 'FF0000'}, 'roi');
-// // var roiCentroid = roi.centroid();
-// Map.layers().add(roiLayer);//display roi
-// // Map.setCenter(roiCentroid);
-
 // study time range
 var year_start = 2001; //  MODIS NDVI 2000-02-18T00:00:00 - Present
 var year_end = 2018;
@@ -88,9 +71,10 @@ var NDVI_monthlyave = ee.ImageCollection.fromImages(
 // 20yr monthly average NDVI
 var NDVI_30yrave = ee.ImageCollection.fromImages(
     months.map(function (m) {
-        var vi = NDVI_monthlyave.filter(ee.Filter.eq('month', m))
-                                .mean()
-                                .rename('NDVIy');
+        var vi = ndvi.select('NDVI')
+                     .filter(ee.Filter.calendarRange(m, m, 'month'))
+                     .mean()
+                     .rename('NDVIy');
         return vi.set('month', m);
     }).flatten()
 );
@@ -220,8 +204,8 @@ Map.addLayer(corrmap.select('correlation'), corrParams, 'Correlation Map');
 Export.image.toDrive({
   image: corrmap,
   description: 'Correlation map of spei with ndvi anomalies',
-  scale: 1000,
-//   region: roi
+  scale: 10000,
+//   region: roi // If not specified, the region defaults to the viewport at the time of invocation
 });
 
 // var options = {
