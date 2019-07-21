@@ -3,7 +3,7 @@
 // correlate with SPEI calculated from NOAH Global Land Assimulation      //
 // System data. It will display and export the correlation map of SPEI vs //
 // three months sum of NDVI anomalies.                                    //          
-// Note: SPEIxMonth in Jan-Dec vs NDVI three month anomalies              //
+// Note: SPEIxMonth in selected month vs NDVI three month anomalies       //
 //------------------------------------------------------------------------//
 // For fast global study                                                  //
 // Contact: Shunan Feng (冯树楠): fsn.1995@gmail.com                      //
@@ -19,13 +19,16 @@ var year_start = 2001; //  MODIS NDVI 2000-02-18T00:00:00 - Present
 var year_end = 2018;
 var month_start = 1;
 var month_end = 12;
+// define the growth season (selected month of spei) here
+// The result will be 
+var speim = 4;// month of spei 
 
 var date_start = ee.Date.fromYMD(year_start, 1, 1);
 var date_end = ee.Date.fromYMD(year_end, 12, 31);
 var years = ee.List.sequence(year_start, year_end);// time range of years
 var months = ee.List.sequence(month_start, month_end);// time range of months
-// change the month lag here, e.g. no lag is 0,-1 is one month lag,-2 is 2 month lag
-var lagflag = -1; 
+
+var lagflag = -1; // change the month lag here, e.g. no lag is 0, -1 is one month lag
 //------------------------------------------------------------------------//
 //                               Datainput                                //
 //------------------------------------------------------------------------//
@@ -165,7 +168,9 @@ var NDVI_anomaly_sum = NDVI_threeMonthAnomaly.map(function(image) {
         }).rename('NDVI_anomalySum'));
 });
 
-var NDVI_anomSumMLag = NDVI_anomaly_sum.select('NDVI_anomalySum').map(addLagm);
+var NDVI_anomSumMLag = NDVI_anomaly_sum.select('NDVI_anomalySum')
+                                       .map(addLagm)
+                                       .filterMetadata('month','equals', speim);
 
 
 //------------------------------------------------------------------//
