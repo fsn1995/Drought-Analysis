@@ -20,15 +20,18 @@ var year_end = 2018;
 var month_start = 1;
 var month_end = 12;
 // define the growth season (selected month of spei) here
-// The result will be 
 var speim = 4;// month of spei 
 
 var date_start = ee.Date.fromYMD(year_start, 1, 1);
 var date_end = ee.Date.fromYMD(year_end, 12, 31);
 var years = ee.List.sequence(year_start, year_end);// time range of years
 var months = ee.List.sequence(month_start, month_end);// time range of months
+// change the month lag here, e.g. no lag is 0,-1 is one month lag,-2 is 2 month lag
+var lagflag = -1; 
 
-var lagflag = -1; // change the month lag here, e.g. no lag is 0, -1 is one month lag
+// The default setting will correlate correlate 2 month time scale of SPEI(SPEI2m)
+// in April with one month lag of three month (May to July) sum of NDVI anomalies.
+
 //------------------------------------------------------------------------//
 //                               Datainput                                //
 //------------------------------------------------------------------------//
@@ -44,6 +47,12 @@ var spei3m = ee.ImageCollection("users/fsn1995/spei3m_noah");
 var spei4m = ee.ImageCollection("users/fsn1995/spei4m_noah");
 var spei5m = ee.ImageCollection("users/fsn1995/spei5m_noah");
 var spei6m = ee.ImageCollection("users/fsn1995/spei6m_noah");
+var spei7m = ee.ImageCollection("users/fsn1995/spei7m_noah");
+var spei8m = ee.ImageCollection("users/fsn1995/spei8m_noah");
+var spei9m = ee.ImageCollection("users/fsn1995/spei9m_noah");
+var spei10m = ee.ImageCollection("users/fsn1995/spei10m_noah");
+var spei11m = ee.ImageCollection("users/fsn1995/spei11m_noah");
+var spei12m = ee.ImageCollection("users/fsn1995/spei12m_noah");
 // select the time scale of spei here
 var spei = spei3m;
 
@@ -202,6 +211,7 @@ Map.addLayer(corrmap.select('correlation'), corrParams, 'Correlation Map');
 
 Export.image.toDrive({
   image: corrmap,
+  folder: 'growth',
   description: 'Correlation map of spei with ndvi anomalies',
   scale: 10000,
 //   region: roi // If not specified, the region defaults to the viewport at the time of invocation
