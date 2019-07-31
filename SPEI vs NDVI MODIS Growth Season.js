@@ -64,10 +64,10 @@ var NDVI_monthlyave = ee.ImageCollection.fromImages(
     years.map(function (y) {
         return months.map(function(m) {
             var vi = ndvi.select('NDVI')
-                                .filter(ee.Filter.calendarRange(y, y, 'year'))
-                                .filter(ee.Filter.calendarRange(m, m, 'month'))
-                                .mean()
-                                .rename('NDVIm');
+                         .filter(ee.Filter.calendarRange(y, y, 'year'))
+                         .filter(ee.Filter.calendarRange(m, m, 'month'))
+                         .mean()
+                         .rename('NDVIm');
             return vi.set('year', y)
                      .set('month', m)
                      .set('system:time_start', ee.Date.fromYMD(y, m, 1));

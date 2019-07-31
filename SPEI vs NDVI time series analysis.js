@@ -1,12 +1,12 @@
 ////////////////////////////////////////////////////////////////////////////
-// This script uses MODIS 1km NDVI product and it is spatially            //
-// correlate with SPEI calculated from NOAH Global Land Assimulation      //
-// System data. It will display and export the correlation map of SPEI vs //
-// three months sum of NDVI anomalies. The generated corrmap will be      //
-// converted to a shapefile based on the threshold (R>0.3 | R>0.5)        //
-// (SPEIxMonth in Jan-Dec vs NDVI three month anomalies)                  //
+// This script aims to compare the time series of SPEI and NDVI in the    //
+// identified sensitive regions where vegetation correlated closely with  //
+// meteorological drought.                                                //
 //------------------------------------------------------------------------//
-// For fast global study                                                  //
+// This is part of a group work about drought analysis by MSc students in //
+// Department of Earth Sciences, Uppsala University:                      //
+// de Mendonça Fileni, Felipe; Erikson, Torbjörn-Johannes; Feng, Shunan   //                                                                         //
+// Supervisor: Pettersson, Rickard; Winterdahl, Mattias                   //
 // Contact: Shunan Feng (冯树楠): fsn.1995@gmail.com                      //
 ////////////////////////////////////////////////////////////////////////////
 
@@ -14,11 +14,20 @@
 //------------------------------------------------------------------------//
 //                             Preparation                                //
 //------------------------------------------------------------------------//
-var worldmap = ee.FeatureCollection('ft:1tdSwUL7MVpOauSgRzqVTOwdfy17KDbw-1d9omPw');//world vector
-var roi = worldmap.geometry();// country 
+
+// import the generated shapefile
+var vectormap = ee.FeatureCollection("users/fsn1995/corrmap0305");
+// define your study area and name it as roi. e.g. draw it by hand tool
+
+var lagflag = 0;
+
 // study time range
-var year_start = 2001; //  MODIS NDVI 2000-02-18T00:00:00 - Present
+var year_start = 2013;
 var year_end = 2018;
+// month range of ndvi anomalies (May to July)
+// var month_start = 5;
+// var month_end = 7;
+// var speim = 4;// month of spei 
 var month_start = 1;
 var month_end = 12;
 
@@ -26,21 +35,14 @@ var date_start = ee.Date.fromYMD(year_start, 1, 1);
 var date_end = ee.Date.fromYMD(year_end, 12, 31);
 var years = ee.List.sequence(year_start, year_end);// time range of years
 var months = ee.List.sequence(month_start, month_end);// time range of months
-// change the month lag here, e.g. no lag is 0,-1 is one month lag,-2 is 2 month lag
-var lagflag = 0; 
-
-// The defalt setting will correlate 2 month time scale of SPEI(SPEI2m)
-// with one month lag of three month sum of NDVI anomalies.
+// next step is to define the months of ndvi anomal calculation
+// var month_anomaly = ee.List.sequence(3,5);// March to May
+// var month_upper = 8;// May to July
+// var month_lower = 4;
 
 //------------------------------------------------------------------------//
-//                               Datainput                                //
+//                                 SPEI                                   //
 //------------------------------------------------------------------------//
-
-// load MODIS NDVI 2000-02-18T00:00:00 - Present
-var ndvi = ee.ImageCollection('MODIS/006/MOD13A2')
-    .filterDate(date_start, date_end)
-    .select('NDVI');
-
 var spei1m = ee.ImageCollection("users/fsn1995/spei1m_noah");
 var spei2m = ee.ImageCollection("users/fsn1995/spei2m_noah");
 var spei3m = ee.ImageCollection("users/fsn1995/spei3m_noah");
@@ -54,20 +56,100 @@ var spei10m = ee.ImageCollection("users/fsn1995/spei10m_noah");
 var spei11m = ee.ImageCollection("users/fsn1995/spei11m_noah");
 var spei12m = ee.ImageCollection("users/fsn1995/spei12m_noah");
 // select the time scale of spei here
-var spei = spei11m;
+var spei = spei11m.filterBounds(roi);
 
-// load land cover data
-var lucc = ee.Image('USGS/NLCD/NLCD2011').select('landcover');
+//------------------------------------------------------------------------//
+//                                 NDVI                                   //
+//------------------------------------------------------------------------//
+
+// load landsat image
+var surfaceReflectance4 = ee.ImageCollection('LANDSAT/LT04/C01/T1_SR')
+    .filterDate(date_start, date_end)
+    .filterBounds(roi);
+var surfaceReflectance5 = ee.ImageCollection('LANDSAT/LT05/C01/T1_SR')
+    .filterDate(date_start, date_end)
+    .filterBounds(roi);
+var surfaceReflectance7 = ee.ImageCollection('LANDSAT/LE07/C01/T1_SR')
+    .filterDate(date_start, date_end)
+    .filterBounds(roi);   
+var surfaceReflectance8 = ee.ImageCollection('LANDSAT/LC08/C01/T1_SR')
+    .filterDate(date_start, date_end)
+    .filterBounds(roi);
+var surfaceReflectance457 = surfaceReflectance4.merge(surfaceReflectance5).merge(surfaceReflectance7);
+
+// // cloud/snow/water mask
+// pixel_qa contains fmask information: 
+// bit 0: fill, bit 1: clear, bit 2: water, 
+// bit 3: cloud shadow, bit 4: snow/ice bit 5: cloud
+// fmask for surfaceReflectance8
+var fmaskL8sr = function(image) {
+    var cloudShadowBitmask = 1 << 3;
+    var cloudsBitMask = 1 << 5;
+    var waterBitmask = 1 << 2;
+    var snowBitmask = 1 << 4;
+    // QA band pixel value
+    var qa = image.select('pixel_qa');
+    // set cloud and shadows to 0
+    var mask = qa.bitwiseAnd(cloudShadowBitmask).eq(0)
+        .and(qa.bitwiseAnd(cloudsBitMask).eq(0))
+        .and(qa.bitwiseAnd(waterBitmask).eq(0))
+        .and(qa.bitwiseAnd(snowBitmask).eq(0));
+    return image.updateMask(mask);
+};
+// fmask for surfaceRflectance457
+var fmaskL457 = function(image) {
+    var qa = image.select('pixel_qa');
+    // If the cloud bit (5) is set and the cloud confidence (7) is high
+    // or the cloud shadow bit is set (3), then it's a bad pixel. (GEE example)
+    var maskband = qa.bitwiseAnd(1 << 5)
+            .and(qa.bitwiseAnd(1 << 7))
+            .or(qa.bitwiseAnd(1 << 3))
+            .and(qa.bitwiseAnd(1 << 2))
+            .and(qa.bitwiseAnd(1 << 4));
+    // Remove edge pixels that don't occur in all bands
+    var mask2 = image.mask().reduce(ee.Reducer.min());
+    return image.updateMask(maskband.not()).updateMask(mask2);
+};
+
+// NDVI computation [-1 1]
+var addNDVI457 = function(image) {
+    var ndvi457 = image.normalizedDifference(['B4', 'B3']).rename('NDVI');
+    return image.addBands(ndvi457);
+};
+var addNDVI8 = function(image) {
+    var ndvi8 = image.normalizedDifference(['B5', 'B4']).rename('NDVI');
+    return image.addBands(ndvi8);
+};
+
+// add cloud masked ndvi band
+
+var L8ndvi = surfaceReflectance8
+    .filter(ee.Filter.calendarRange(month_start, month_end, 'month'))
+    .map(fmaskL8sr)
+    .map(addNDVI8);
+
+var L457ndvi = surfaceReflectance457
+    .filter(ee.Filter.calendarRange(month_start, month_end, 'month'))
+    .map(fmaskL457)
+    .map(addNDVI457);
+
+// merge L8 L457 NDVI
+var landsatndvi = L8ndvi.merge(L457ndvi);
+// var NDVI = landsatndvi.filterDate(date_start, date_end)
+//                       .sort('system:time_start', false)
+//                       .select('NDVI');
+
+
 // monthly average NDVI
 // sytstem time is set as 1st of each month
 var NDVI_monthlyave = ee.ImageCollection.fromImages(
     years.map(function (y) {
         return months.map(function(m) {
-            var vi = ndvi.select('NDVI')
-                         .filter(ee.Filter.calendarRange(y, y, 'year'))
-                         .filter(ee.Filter.calendarRange(m, m, 'month'))
-                         .mean()
-                         .rename('NDVIm');
+            var vi = landsatndvi.select('NDVI')
+                                .filter(ee.Filter.calendarRange(y, y, 'year'))
+                                .filter(ee.Filter.calendarRange(m, m, 'month'))
+                                .mean()
+                                .rename('NDVIm');
             return vi.set('year', y)
                      .set('month', m)
                      .set('system:time_start', ee.Date.fromYMD(y, m, 1));
@@ -75,17 +157,16 @@ var NDVI_monthlyave = ee.ImageCollection.fromImages(
     }).flatten()
 );
 
-// 20yr monthly average NDVI
+// 30yr monthly average NDVI
 var NDVI_30yrave = ee.ImageCollection.fromImages(
     months.map(function (m) {
-        var vi = ndvi.select('NDVI')
-                     .filter(ee.Filter.calendarRange(m, m, 'month'))
-                     .mean()
-                     .rename('NDVIy');
+        var vi = NDVI_monthlyave.filter(ee.Filter.eq('month', m))
+                                .mean()
+                                .rename('NDVIy');
         return vi.set('month', m);
     }).flatten()
 );
-// print(NDVI_30yrave);
+// print(NDVI_monthlyave);
 
 // NDVI anomaly = monthly average NDVI - 30yr monthly average NDVI 
 // NDVI monthly anomaly
@@ -96,7 +177,7 @@ var monthfilter = ee.Filter.equals({
 var monthlink = ee.Join.saveFirst({
     matchKey: 'match',
 });
-
+// print(NDVI_30yrave);
 var NDVI_monthlink = ee.ImageCollection(monthlink.apply(NDVI_monthlyave,NDVI_30yrave,monthfilter))
     .map(function(image) {
         return image.addBands(image.get('match'));
@@ -114,6 +195,7 @@ var addNDVI_anomaly = function(image) {
 };
                             
 var NDVI_anomaly = NDVI_monthlink.map(addNDVI_anomaly);
+// print(NDVI_anomaly);
 
 //------------------------------------------------------------------------//
 //                                  Lag                                   //
@@ -140,8 +222,6 @@ var addLag2m = function(image) {
     var lagm = ee.Date(image.get('system:time_start')).advance(-2,'month');
     return image.set({'lagm': lagm});
 };
-
-// compute three month sum ndvi anomaly
 
 var NDVI0 = NDVI_anomaly.select('NDVI_anomaly').map(addLag0m);
 var NDVI1 = NDVI_anomaly.select('NDVI_anomaly').map(addLag1m);
@@ -180,15 +260,19 @@ var NDVI_anomaly_sum = NDVI_threeMonthAnomaly.map(function(image) {
 var NDVI_anomSumMLag = NDVI_anomaly_sum.select('NDVI_anomalySum').map(addLagm);
 
 
+// Map.addLayer(speiSelect.select('spei'), corrParams, 'spei Map');
+// print(NDVI_anomaly_sum);
+
 //------------------------------------------------------------------//
-// This part compares NDVI anomalies with spei computed from NOAH   //
+// This part compares NDVI anomalies with spei2m computed from NOAH //
 // Global land assimulation system                                  //
 //------------------------------------------------------------------//
 
 var speiSet = spei.map(function(image) {
     return image.set('date', image.date());
   });
-var timescaleFilter = ee.Filter.equals({
+  
+  var timescaleFilter = ee.Filter.equals({
     leftField: 'lagm',
     rightField: 'date',
 });  
@@ -199,59 +283,20 @@ var NDVI3mLag_spei = ee.ImageCollection(lagLink.apply(NDVI_anomSumMLag.select('N
             return image.addBands(image.get('match'));
         });
 
-var corrmap = NDVI3mLag_spei.reduce(ee.Reducer.pearsonsCorrelation()); 
-//                        //.addBands(lucc.select('landcover').rename('lucc'));
-// // var corrmap = NDVI_spei.reduce(ee.Reducer.spearmansCorrelation()).clip(roi);
-//                     // .addBands(lucc.select('landcover').rename('lucc'));
-
+// print(NDVI_spei,'NDVI_spei');
+var corrmap = NDVI3mLag_spei.reduce(ee.Reducer.pearsonsCorrelation()).clip(roi);
+// var corrmap = NDVI_spei.reduce(ee.Reducer.spearmansCorrelation()).clip(roi);
+                    // .addBands(lucc.select('landcover')
+                    // .rename('lucc'));
 var corrParams = {min: -1, max: 1, palette: ['red','white', 'green']};
 Map.addLayer(corrmap.select('correlation'), corrParams, 'Correlation Map');
 
-Export.image.toDrive({
-  image: corrmap,
-  folder: 'speiCorr',
-  description: 'Correlation map of spei with ndvi anomalies',
-  scale: 10000,
-//   region: roi // If not specified, the region defaults to the viewport at the time of invocation
-});
-
-
-// Define arbitrary thresholds R>0.3 R>0.5
-var zones = corrmap.select('correlation').gt(0.3).add(corrmap.select('correlation').gt(0.5));
-zones = zones.updateMask(zones.neq(0));
-
-var vectors = zones.addBands(corrmap.select('correlation')).reduceToVectors({
-    geometry: roi,
-    crs: corrmap.projection(),
-    scale: 25000,
-    // geometryType: 'polygon',
-    eightConnected: false,
-    labelProperty: 'zone',
-    reducer: ee.Reducer.mean()
-  });
-  
-// print(zones);
-// print(vectors);
-// R> 0.3 will be displayed in blue, R>0.5 will be displayed in red
-Map.addLayer(zones, {min: 1, max: 2, palette: ['0000FF', 'FF0000']}, 'raster');
-
-var display = ee.Image(0).updateMask(0).paint(vectors, '000000', 3);
-Map.addLayer(display, {palette: '000000'}, 'vectors');
-  
-Export.table.toAsset({
-    collection: vectors,
-    description:'corrmap2vector',
-    assetId: 'corrmap0305',
-  });
-  
-// var options = {
-//     // lineWidth: 1,
-//     // pointSize: 2,
-//     hAxis: {title: 'R and P value'},
-//     vAxis: {title: 'Correlation Coefficient'},
-//     title: 'Correlation map average'
-// };
-// var chart = ui.Chart.image.byClass(
-//     corrmap, 'lucc', roi, ee.Reducer.mean(), 100000, lucc.get('landcover_class_names')
-// ).setOptions(options);  
-// print(chart);
+// Export.image.toDrive({
+//   image: corrmap,
+//   description: 'Correlation map of monthly NDVI and water balance',
+//   scale: 1000,
+// //   region: roi
+// });var landsatndvi = L8ndvi.merge(L457ndvi);
+print(ui.Chart.image.seriesByRegion(landsatndvi, roi, ee.Reducer.mean(), 'NDVI',200));
+print(ui.Chart.image.seriesByRegion(NDVI3mLag_spei, roi, ee.Reducer.mean(), 'NDVI_anomalySum',200));
+print(ui.Chart.image.seriesByRegion(NDVI3mLag_spei, roi, ee.Reducer.mean(), 'b1',200));
