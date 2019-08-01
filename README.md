@@ -1,19 +1,49 @@
 # Drought Analysis
 [![DOI](https://zenodo.org/badge/173935948.svg)](https://zenodo.org/badge/latestdoi/173935948)
 
-This is an unpublished ongoing student project of drought analysis using Google Earth Engine (GEE).    
+This is an unpublished ongoing student project of vegetation response to meteorological drought using Google Earth Engine (GEE).    
 This is part of a group work about drought analysis by MSc students in Department of Earth Sciences, Uppsala University: de Mendonça Fileni, Felipe; Erikson, Torbjörn-Johannes; Feng, Shunan    
 Supervisor: Pettersson, Rickard; Winterdahl, Mattias                   
 
-Preliminary results will be presented during EGU general assembly 2019 in Vienna. [EGU 2019-19137](https://github.com/fsn1995/Drought-Analysis/blob/master/doc/EGU2019-19137_Drought%20Analysis.pdf)  
-![screenshot](pic/interface.png)
+Preliminary results were presented during EGU general assembly 2019 in Vienna. [EGU 2019-19137](https://github.com/fsn1995/Drought-Analysis/blob/master/doc/EGU2019-19137_Drought%20Analysis.pdf)
+Now we have expanded the study to global scale.
+
 ## 1. SPEI preparation
 SPEI is computed using the R package: Beguería S. (2017) SPEIbase: R code used in generating the SPEI global database, [doi:10.5281/zenodo.834462](https://github.com/sbegueria/SPEIbase).
 The 0.25 degree NOAH data is downloaded by from earthdata.nasa.gov by using [EarthdataDownload.py](https://github.com/fsn1995/PythonFSN/blob/master/EarthdataDownload.py). 
 Note: 
 - NOAH data is in a different format as the input required by SPEIbase, the suggestion is to convert it to the same format as the data used in the SPEI template.
 - GEE does not accept netcdf file, so we did an extra step to convert SPEI.nc to .tif.
+- The link to the re-computed SPEI product will be available after the submission of the manuscript.
 
+## Global Scale
+### 2.1 [SPEI vs NDVI MODIS](https://github.com/fsn1995/Drought-Analysis/blob/master/SPEI%20vs%20NDVI%20MODIS.js)
+The global scale study utilizes MODIS 1km NDVI product. It explores the relationship between: 1) months of the sum of NDVI anomalies; 2) month lag of NDVI anomalies; 3) time scales of SPEI.
+
+change the month lag here, e.g. no lag is 0,-1 is one month lag,-2 is 2 month lag. SPEI1-12m are available.
+~~~javascript
+var lagflag = 0; 
+var spei = spei11m;
+~~~
+Three layers will be displayed on the code editor interface:
+- 1) corrmap: Pearson correlation coefficient (R) of SPEI vs NDVI anomalies
+- 2) raster: color blue for areas with R > 0.3, color red for areas with R > 0.5.
+- 3) vector: shapefile converted from raster layer. It will be needed in the next step.
+![screenshot](pic/corrmap.png)
+You can export the correlation map and vector file for further analysis by running the task.
+### 2.2 [SPEI vs NDVI MODIS Growing Season](https://github.com/fsn1995/Drought-Analysis/blob/master/SPEI%20vs%20NDVI%20MODIS%20Growth%20Season.js)
+This step correlates SPEI with NDVI anomalies in the selected month only.
+define the growth season (selected month of spei) here. e.g. the default setting is to correlate the SPEI in April in the study period with the NDVI anomalies.
+~~~javascript
+var speim = 4;// month of spei 
+~~~
+### 2.3 [SPEI VS NDIV time series analysis](https://github.com/fsn1995/Drought-Analysis/blob/master/SPEI%20vs%20NDVI%20time%20series%20analysis.js)
+This script utlizes Landsat data for time series analysis. It will import the shapefile produced from step 2.1. The vector layer covers areas where vegetation is sensitive to meteorological drought. Please draw or define your study area and rename it as roi before run this code. 
+![screenshot](pic/draw.png)
+Three time series plots of monthly average NDVI, NDVI anomaly and SPEI will be displayed in the console.
+
+# old scripts for the study in California
+![screenshot](pic/interface.png)
 ## 2. SPEI vs NDVI
 It exports and displays the correlation map of monthly SPEI vs the sum of coming three-month NDVI anomalies. The example in this script is studying California, 1984-2018. But it could also be applied to other areas by changing several lines of script.
 
@@ -55,6 +85,3 @@ Discarded personal practice withspatial correlation of water balance(NOAH 0.25 d
 - Sazib, N., Mladenova, I., Bolten, J., 2018. Leveraging the google earth engine for drought assessment using global soil moisture data. Remote Sensing 10. https://doi.org/10.3390/rs10081265  
 
 Fileni, F., Feng, S., Erikson., T, Winterdahl, M., Pettersson, R., 2019. Spatial and temporal analysis of vegetation response to meteorological droughts in California, 1984-2018
-
-## update 20190718
-updates in computing ndvi anomalies. fast global scale study using MODIS product.
