@@ -53,8 +53,14 @@ var spei9m = ee.ImageCollection("users/fsn1995/spei9m_noah");
 var spei10m = ee.ImageCollection("users/fsn1995/spei10m_noah");
 var spei11m = ee.ImageCollection("users/fsn1995/spei11m_noah");
 var spei12m = ee.ImageCollection("users/fsn1995/spei12m_noah");
+
 // select the time scale of spei here
-var spei = spei11m;
+var spei = spei11m.filterDate(date_start, date_end)
+                  .map(function(image) {
+                    var speiMask = image.gte(0);
+                    return image.updateMask(speiMask);
+                }); // mask out spei
+
 
 // load land cover data
 var lucc = ee.Image('USGS/NLCD/NLCD2011').select('landcover');
@@ -235,8 +241,8 @@ var vectors = zones.addBands(corrmap.select('correlation')).reduceToVectors({
 // R> 0.3 will be displayed in blue, R>0.5 will be displayed in red
 Map.addLayer(zones, {min: 1, max: 2, palette: ['0000FF', 'FF0000']}, 'raster');
 
-var display = ee.Image(0).updateMask(0).paint(vectors, '000000', 3);
-Map.addLayer(display, {palette: '000000'}, 'vectors');
+// var display = ee.Image(0).updateMask(0).paint(vectors, '000000', 3);
+// Map.addLayer(display, {palette: '000000'}, 'vectors');
   
 Export.table.toAsset({
     collection: vectors,

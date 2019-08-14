@@ -61,7 +61,11 @@ var spei10m = ee.ImageCollection("users/fsn1995/spei10m_noah");
 var spei11m = ee.ImageCollection("users/fsn1995/spei11m_noah");
 var spei12m = ee.ImageCollection("users/fsn1995/spei12m_noah");
 // select the time scale of spei here
-var spei = spei11m.filterBounds(roi);
+var spei = spei11m.filterBounds(roi)
+                  .map(function(image) {
+                    var speiMask = image.gte(0);
+                    return image.updateMask(speiMask);
+                }); // mask out spei
 
 //------------------------------------------------------------------------//
 //                                 NDVI                                   //
