@@ -49,7 +49,8 @@ This script utlizes Landsat data for time series analysis. It will import the sh
 Three time series plots of monthly average NDVI, NDVI anomaly and SPEI will be displayed in the console.
 
 ### 2.4 [SPEI Viewer](https://github.com/fsn1995/Drought-Analysis/blob/master/SPEI%20viewer.js)  
-It would provide a quick access to the SPEI product. (to be continued)
+The purpose of the script is to provide a quick access to the SPEI product.computes the differences of the annual average SPEI. Positive SPEI values are masked as it focuses on the drought period. The difference maps show the annual difference of drought. Each layer represents the difference between the annual average SPEI in that year and its previous years.  
+Optionally, the export of the differences maps and the display of time series of SPEI at the defined study site      
 
 # old scripts for the study in California
 ![screenshot](pic/interface.png)

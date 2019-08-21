@@ -1,3 +1,16 @@
+////////////////////////////////////////////////////////////////////////////
+//                              SPEI viewer                               //
+// This script computes the differences of the annual average SPEI.       //
+// Positive SPEI values are masked as it focuses on the drought period.   //
+// The difference maps show the annual difference of drought. Each layer  //
+// represents the difference between the annual average SPEI in that year //
+// and the previous years.                                                //
+//------------------------------------------------------------------------//
+// Optionally, one may export the annual difference maps to Goole drive.  //
+// You can also define a point/region of interest by uploading a shapefile//
+// or draw it by hand in GEE. The monthly evolution of SPEI will be displ //
+// -ayed. Just like SPEI vs NDVI time series analysis                     //
+////////////////////////////////////////////////////////////////////////////
 // study time range
 var year_start = 2001; //  MODIS NDVI 2000-02-18T00:00:00 - Present
 var year_end = 2018;
@@ -7,7 +20,10 @@ var month_end = 12;
 var date_start = ee.Date.fromYMD(year_start, 1, 1);
 var date_end = ee.Date.fromYMD(year_end, 12, 31);
 var years = ee.List.sequence(year_start, year_end);// time range of years
-var years1 = ee.List.sequence(year_start - 1 , year_end - 1);// time range of years
+
+// define your study area and name it as roi. e.g. draw it by hand tool
+
+
 // var months = ee.List.sequence(month_start, month_end);// time range of months
 // change the month lag here, e.g. no lag is 0,-1 is one month lag,-2 is 2 month lag
 var lagflag = 0; 
@@ -32,6 +48,29 @@ var spei = spei11m.filterDate(date_start, date_end)
                     return image.updateMask(speiMask);
                 }); // mask spei > 0
 
+// annual spei
+var speiYear = ee.ImageCollection.fromImages(
+    years.map(function (y) {
+        var indice = spei.select('b1')
+                          .filter(ee.Filter.calendarRange(y, y, 'year'))
+                          .mean()
+                          .rename('speiy');
+        return indice.set('year', y)
+                     .set('system:time_start', ee.Date.fromYMD(y, 1, 1));
+    }).flatten()
+);
+
+var speiYear1 = ee.ImageCollection.fromImages(
+  years.map(function (y) {
+      var indice = spei.select('b1')
+                       .filter(ee.Filter.calendarRange(y, y, 'year'))
+                       .mean()
+                       .rename('speiy1');
+      return indice.set('year', y)
+                   .set('system:time_start', ee.Date.fromYMD(y, 1, 1));
+  }).flatten()
+);
+
 var addLag1y = function(image) {
   var lagy = ee.Date(image.get('system:time_start')).advance(-1,'year');
   return image.set({'lagy': lagy});
@@ -41,49 +80,27 @@ var addLag0y = function(image) {
   return image.set({'lagy': lagy});
 };
 
-var spei0 = spei.select('b1').map(addLag0y);
-var spei1 = spei.select('b1').map(addLag1y);
-
-
-// annual spei
-var speiYear = ee.ImageCollection.fromImages(
-    years.map(function (y) {
-        var indice = spei0.select('b1')
-                            .filter(ee.Filter.calendarRange(y, y, 'year'))
-                            .mean()
-                            .rename('speiy');
-        return indice.set('year', y)
-                     .set('system:time_start', ee.Date.fromYMD(y, 1, 1));
-    }).flatten()
-);
-
-var speiYear1 = ee.ImageCollection.fromImages(
-  years1.map(function (y) {
-      var indice = spei1.select('b1')
-                          .filter(ee.Filter.calendarRange(y, y, 'year'))
-                          .mean()
-                          .rename('speiy1');
-      return indice.set('year', y)
-                   .set('system:time_start', ee.Date.fromYMD(y, 1, 1));
-  }).flatten()
-);
+var spei0 = speiYear.select('speiy').map(addLag0y);
+var spei1 = speiYear1.select('speiy1').map(addLag1y);
+// print(spei0);
+// print(spei1);
 
 var lagFilter = ee.Filter.equals({
-  leftField: 'year',
-  rightField: 'year',
+  leftField: 'lagy',
+  rightField: 'lagy',
 });
 var lagLink = ee.Join.saveFirst({
   matchKey: 'match',
 });
 
-var speiAll = ee.ImageCollection(lagLink.apply(speiYear.select('speiy'),
-        speiYear1.select('speiy1'),lagFilter))
+var speiAll = ee.ImageCollection(lagLink.apply(spei0.select('speiy'),
+        spei1.select('speiy1'),lagFilter))
         .map(function(image) {
           return image.addBands(image.get('match'));
         });
         
-        
-// print(speiAll);
+// Map.addLayer(speiAll.select('speiy').filterDate('2017-01-01'));
+print(speiAll);
 // spei differences
 var speiDiff = speiAll.map(function(image) {
   return image.addBands(
@@ -104,18 +121,8 @@ var speiDiff = speiAll.map(function(image) {
 //     // in the linear regression output. code from GEE guides
 // });
 
-// var speiYear = ee.ImageCollection.fromImages(
-//     years.map(function (y) {
-//         var indice = spei.select(['system:time_start', 'b1'])
-//                          .filter(ee.Filter.calendarRange(y, y, 'year'))
-//                          .reduce(ee.Reducer.linearFit());
-//         return indice.set('year', y)
-//                      .set('system:time_start', ee.Date.fromYMD(y, 1, 1));                 
-//     }).flatten()
-// );
-
 var mapPara = {min: -1, max: 1, palette: ['red','white', 'green']};
-Map.addLayer(speiDiff.select('speiDiff').filterDate('2001-01-01'), mapPara, '2001');
+// Map.addLayer(speiDiff.select('speiDiff').filterDate('2001-01-01'), mapPara, '2001');
 Map.addLayer(speiDiff.select('speiDiff').filterDate('2002-01-01'), mapPara, '2002');
 Map.addLayer(speiDiff.select('speiDiff').filterDate('2003-01-01'), mapPara, '2003');
 Map.addLayer(speiDiff.select('speiDiff').filterDate('2004-01-01'), mapPara, '2004');
@@ -133,3 +140,16 @@ Map.addLayer(speiDiff.select('speiDiff').filterDate('2015-01-01'), mapPara, '201
 Map.addLayer(speiDiff.select('speiDiff').filterDate('2016-01-01'), mapPara, '2016');
 Map.addLayer(speiDiff.select('speiDiff').filterDate('2017-01-01'), mapPara, '2017');
 Map.addLayer(speiDiff.select('speiDiff').filterDate('2018-01-01'), mapPara, '2018');
+
+//------------------------------------------------------------------------//
+// uncomment the following lines for optional experiment                  //
+//------------------------------------------------------------------------//
+
+// Export.image.toDrive({
+//   image: speiDiff.select('speiDiff'),
+//   folder: 'speiDiff',
+//   description: 'Differences of annual SPEI',
+//   scale: 10000,
+// //   region: roi // If not specified, the region defaults to the viewport at the time of invocation
+// });
+// print(ui.Chart.image.seriesByRegion(spei.select('b1'), roi, ee.Reducer.mean(), 'Montly SPEI', 1000));
