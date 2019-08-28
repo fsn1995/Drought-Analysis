@@ -11,6 +11,8 @@
 // or draw it by hand in GEE. The monthly evolution of SPEI will be displ //
 // -ayed. Just like SPEI vs NDVI time series analysis                     //
 ////////////////////////////////////////////////////////////////////////////
+
+//-------------------------------Preparation------------------------------//
 // study time range
 var year_start = 2001; //  MODIS NDVI 2000-02-18T00:00:00 - Present
 var year_end = 2018;
@@ -44,17 +46,75 @@ var spei12m = ee.ImageCollection("users/fsn1995/spei12m_noah");
 // select the time scale of spei here
 var spei = spei11m.filterDate(date_start, date_end)
                   .map(function(image) {
-                    var speiMask = image.gte(0);
+                    var speiMask = image.lte(0);
                     return image.updateMask(speiMask);
                 }); // mask spei > 0
+
+var ndvi = ee.ImageCollection('MODIS/006/MOD13A2')
+    .filterDate(date_start, date_end)
+    .select('NDVI');
+
+//-------------------------Trend identification---------------------------//
+
+// kendall's test, P-value disabled by GEE
+
+// var speiTrend = spei.reduce(ee.Reducer.kendallsCorrelation());
+// var speiTrendTau = {min: -1, max: 1, palette: ['red','white', 'green']};
+// // var speiTrendP = {min: 0, max: 1, palette: ['red','white', 'green']};
+// Map.addLayer(speiTrend.select('b1_tau'), speiTrendTau, 'speiTrendTau');
+// // Map.addLayer(speiTrend.select('b1_p-value'), speiTrendP, 'speiTrendP');
+
+// var ndviTrend = ndvi.reduce(ee.Reducer.kendallsCorrelation());
+// Map.addLayer(ndviTrend.select('NDVI_tau'), speiTrendTau, 'ndviTrendTau');
+// // Map.addLayer(ndviTrend.select('NDVI_p-value'), speiTrendP, 'speiTrendP');
+
+// ee.ImageCollection.formaTrend
+
+// var speiTrendTau = {min: -1, max: 1, palette: ['red','white', 'green']};
+// var speiTrend = spei.formaTrend();
+// Map.addLayer(speiTrend.select('long-trend'), speiTrendTau, 'speiTrend');
+// Map.addLayer(speiTrend.select('long-tstat'), speiTrendTau, 'speiTstat');
+// var ndviTrend = ndvi.formaTrend();
+// Map.addLayer(ndviTrend.select('long-trend'), speiTrendTau, 'ndviTrend');
+// Map.addLayer(ndviTrend.select('long-tstat'), speiTrendTau, 'ndviTstat');
+
+// linear trend
+
+var speiLinear = spei.map(function(image) {
+    return image.addBands(image.metadata('system:time_start').divide(1e18));
+    // Scale milliseconds by a large constant to avoid very small slopes
+    // in the linear regression output. code from GEE guides
+});
+
+var speiLinear = speiLinear.select(['system:time_start', 'b1']).reduce(
+  ee.Reducer.linearFit());
+
+Export.image.toDrive({
+  image: speiLinear.select('scale'),
+  folder: 'speiDiff',
+  description: 'speiLinearScale',
+  scale: 10000,
+//   region: roi // If not specified, the region defaults to the viewport at the time of invocation
+});
+
+Export.image.toDrive({
+  image: speiLinear.select('offset'),
+  folder: 'speiDiff',
+  description: 'speiLinearOffset',
+  scale: 10000,
+//   region: roi // If not specified, the region defaults to the viewport at the time of invocation
+});
+
+Map.addLayer(speiLinear,
+  {min: 0, max: [-0.9, 8e-5, 1], bands: ['scale', 'offset', 'scale']}, 'fit');
 
 // annual spei
 var speiYear = ee.ImageCollection.fromImages(
     years.map(function (y) {
         var indice = spei.select('b1')
-                          .filter(ee.Filter.calendarRange(y, y, 'year'))
-                          .mean()
-                          .rename('speiy');
+                         .filter(ee.Filter.calendarRange(y, y, 'year'))
+                         .mean()
+                         .rename('speiy');
         return indice.set('year', y)
                      .set('system:time_start', ee.Date.fromYMD(y, 1, 1));
     }).flatten()

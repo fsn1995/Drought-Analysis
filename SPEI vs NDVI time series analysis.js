@@ -62,8 +62,9 @@ var spei11m = ee.ImageCollection("users/fsn1995/spei11m_noah");
 var spei12m = ee.ImageCollection("users/fsn1995/spei12m_noah");
 // select the time scale of spei here
 var spei = spei11m.filterBounds(roi)
+                  .filterDate(date_start, date_end)
                   .map(function(image) {
-                    var speiMask = image.gte(0);
+                    var speiMask = image.lte(0);
                     return image.updateMask(speiMask);
                 }); // mask out spei
 
