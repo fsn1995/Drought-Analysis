@@ -17,7 +17,7 @@
 
 // import the generated shapefile
 var vectormap = ee.FeatureCollection("users/fsn1995/corrmap0305");
-var vector = vectormap.geometry();// us state
+var vector = vectormap.geometry();
 var vectorLayer = ui.Map.Layer(vector, {color: 'FF0000'}, 'R>0.3&0.5');
 Map.layers().add(vectorLayer);//display roi
 
