@@ -26,37 +26,57 @@ var years = ee.List.sequence(year_start, year_end);// time range of years
 var months = ee.List.sequence(month_start, month_end);// time range of months
 
 // define your study area and name it as roi. e.g. draw it by hand tool
+var points = ee.FeatureCollection([
+    ee.Feature(ee.Geometry.Point(-99.25260, 19.32235), {'label': 'park'}),
+    ee.Feature(ee.Geometry.Point(-99.08992, 19.27868), {'label': 'farm'}),
+    ee.Feature(ee.Geometry.Point(-99.21135, 19.31860), {'label': 'urban'})
+  ]);
 
 var geometry = ee.FeatureCollection([
-    /* color: #d63000 */ee.Geometry.MultiPoint(
-        [[-120.04598637852064, 36.447665173620244],//California
-         [-99.39168950352064, 32.980880455676854], //Texas
-         [-41.521726852388724, -10.87755592386568],//Brazil
-         [21.87462563721556, -23.646207259859224], //Southern Africa
-         [120.66368813721556, -31.729729863475043],//Australia1
-         [125.05821938721556, -25.5639224731522],  //Australia2
-         [148.08556313721556, -25.5639224731522],  //Australia3
-         [-7.587965499171105, 38.51236079666947],  //Portugal
-         [-4.072340499171105, 37.89075584438553],  //Spain
-         [15.087815750828895, 57.84360752733928],  //Sweden
-         [24.931565750828895, 61.22692304603273],  //Finland
-         [77.1762313117191, 16.351044772181],      //India
-         [116.1996688117191, 37.90027047802768]]) //Northern China
+    ee.Feature(ee.Geometry.Point(-120.04598637852064, 36.447665173620244),
+    {'label': 'California'}),
+    ee.Feature(ee.Geometry.Point(-99.39168950352064, 32.980880455676854),
+    {'label': 'Texas'}),
+    ee.Feature(ee.Geometry.Point(-41.521726852388724, -10.877555923865684),
+    {'label': 'Brazil'}),
+    ee.Feature(ee.Geometry.Point(21.87462563721556, -23.646207259859224),
+    {'label': 'Southern Africa'}),
+    ee.Feature(ee.Geometry.Point(120.66368813721556, -31.729729863475043),
+    {'label': 'Australia1'}),
+    ee.Feature(ee.Geometry.Point(125.05821938721556, -25.5639224731522),
+    {'label': 'Australia2'}),
+    ee.Feature(ee.Geometry.Point(148.08556313721556, -25.5639224731522),
+    {'label': 'Australia3'}),
+    ee.Feature(ee.Geometry.Point(-7.587965499171105, 38.51236079666947),
+    {'label': 'Portugal'}),    
+    ee.Feature(ee.Geometry.Point(-4.072340499171105, 37.89075584438553),
+    {'label': 'Spain'}),  
+    ee.Feature(ee.Geometry.Point(15.087815750828895, 57.84360752733928),
+    {'label': 'Sweden'}),  
+    ee.Feature(ee.Geometry.Point(24.931565750828895, 61.22692304603273),
+    {'label': 'Finland'}),  
+    ee.Feature(ee.Geometry.Point(77.1762313117191, 16.351044772181),
+    {'label': 'India'}),  
+    ee.Feature(ee.Geometry.Point(116.1996688117191, 37.90027047802768),
+    {'label': 'Northern China'}),  
 ]);
-// var geometry = /* color: #d63000 */ee.Geometry.MultiPoint(
-//   [[-120.04598637852064, 36.447665173620244],//California
-//    [-99.39168950352064, 32.980880455676854], //Texas
-//    [-41.521726852388724, -10.87755592386568],//Brazil
-//    [21.87462563721556, -23.646207259859224], //Southern Africa
-//    [120.66368813721556, -31.729729863475043],//Australia1
-//    [125.05821938721556, -25.5639224731522],  //Australia2
-//    [148.08556313721556, -25.5639224731522],  //Australia3
-//    [-7.587965499171105, 38.51236079666947],  //Portugal
-//    [-4.072340499171105, 37.89075584438553],  //Spain
-//    [15.087815750828895, 57.84360752733928],  //Sweden
-//    [24.931565750828895, 61.22692304603273],  //Finland
-//    [77.1762313117191, 16.351044772181],      //India
-//    [116.1996688117191, 37.90027047802768]]); //Northern China
+// var geometry = ee.FeatureCollection([
+//     /* color: #d63000 */ee.Geometry.MultiPoint(
+//         [[-120.04598637852064, 36.447665173620244],//California
+//          [-99.39168950352064, 32.980880455676854], //Texas
+//          [-41.521726852388724, -10.87755592386568],//Brazil
+//          [21.87462563721556, -23.646207259859224], //Southern Africa
+//          [120.66368813721556, -31.729729863475043],//Australia1
+//          [125.05821938721556, -25.5639224731522],  //Australia2
+//          [148.08556313721556, -25.5639224731522],  //Australia3
+//          [-7.587965499171105, 38.51236079666947],  //Portugal
+//          [-4.072340499171105, 37.89075584438553],  //Spain
+//          [15.087815750828895, 57.84360752733928],  //Sweden
+//          [24.931565750828895, 61.22692304603273],  //Finland
+//          [77.1762313117191, 16.351044772181],      //India
+//          [116.1996688117191, 37.90027047802768]]) //Northern China
+// ]);
+
 
 var roiPoints = geometry.buffer(9000);
 
@@ -294,7 +314,7 @@ var lucc_Piechart = ui.Chart.feature.byFeature({
     sliceVisibilityThreshold: 0
 });
 print('LUCC percentage', lucc_Piechart);
-
+Map.addLayer(geometry);
 print(ui.Chart.image.seriesByRegion(NDVI_anomSumMLag, roiPoints
     , ee.Reducer.mean(), 'NDVI_anomalySum',1000));
 print(ui.Chart.image.seriesByRegion(NDVI3mLag_spei, roiPoints, 
