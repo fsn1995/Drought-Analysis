@@ -63,7 +63,30 @@ var spei = spei11m.filterDate(date_start, date_end)
 
 
 // load land cover data
-var lucc = ee.Image('USGS/NLCD/NLCD2011').select('landcover');
+// var lucc = ee.Image('USGS/NLCD/NLCD2011').select('landcover');
+var lucc = ee.Image('ESA/GLOBCOVER_L4_200901_200912_V2_3').select('landcover');
+var lucc_names = ee.Dictionary.fromLists(
+    ee.List(lucc.get('landcover_class_values')).map(ee.String),
+    lucc.get('landcover_class_names')
+);
+print(lucc_names, 'lucc name list');
+
+var landform = ee.Image("CSP/ERGo/1_0/Global/ALOS_landforms");
+var landform_names = [
+    'Peak/ridge (warm)', 'Peak/ridge', 'Peak/ridge (cool)', 'Mountain/divide',
+    'Cliff', 'Upper slope (warm)', 'Upper slope', 'Upper slope (cool)',
+    'Upper slope (flat)', 'Lower slope (warm)', 'Lower slope','Lower slope (cool)',
+    'Lower slope (flat)', 'Valley', 'Valley (narrow)'
+];
+var landform_palette = [
+    '141414', '383838', '808080', 'EBEB8F', 'F7D311', 'AA0000', 'D89382',
+    'DDC9C9', 'DCCDCE', '1C6330', '68AA63', 'B5C98E', 'E1F0E5', 'a975ba',
+    '6f198c'
+];
+var landform_num = [11, 12, 13, 14, 15, 21, 22, 23, 24, 31, 32, 33, 34, 41, 42];
+var landformPara = ee.Dictionary.fromLists(
+  ee.List(landform_num).map(ee.String),
+  landform_names);
 // monthly average NDVI
 // sytstem time is set as 1st of each month
 var NDVI_monthlyave = ee.ImageCollection.fromImages(
@@ -206,6 +229,7 @@ var NDVI3mLag_spei = ee.ImageCollection(lagLink.apply(NDVI_anomSumMLag.select('N
         });
 
 var corrmap = NDVI3mLag_spei.reduce(ee.Reducer.pearsonsCorrelation()); 
+                            // .addBands(landform.select('constant').rename('landform'));
 //                        //.addBands(lucc.select('landcover').rename('lucc'));
 // // var corrmap = NDVI_spei.reduce(ee.Reducer.spearmansCorrelation()).clip(roi);
 //                     // .addBands(lucc.select('landcover').rename('lucc'));
@@ -259,5 +283,10 @@ Export.table.toAsset({
 // };
 // var chart = ui.Chart.image.byClass(
 //     corrmap, 'lucc', roi, ee.Reducer.mean(), 100000, lucc.get('landcover_class_names')
+// ).setOptions(options);  
+// print(chart);
+
+// var chart = ui.Chart.image.byClass(
+//     corrmap, 'landform', roi, ee.Reducer.mean(), 50000, landformTest
 // ).setOptions(options);  
 // print(chart);
