@@ -22,21 +22,21 @@ Note:
 ### 2.1 [SPEI vs NDVI MODIS](https://github.com/fsn1995/Drought-Analysis/blob/master/SPEI%20vs%20NDVI%20MODIS.js)
 The global scale study utilizes MODIS 1km NDVI product. It explores the relationship between: 1) months of the sum of NDVI anomalies; 2) month lag of NDVI anomalies; 3) time scales of SPEI.
 
-change the month lag here, e.g. no lag is 0, -1 is one month lag,-2 is 2 month lag. SPEI1-12m are available. Here we are only focusing on the drought so SPEI > 0 is masked. (SPEI mask is also applied to other scripts in this project)
+change the month lag here, e.g. no lag is 0, -1 is one month lag,-2 is 2 month lag. SPEI1-12m are available. Here we are only focusing on the drought so SPEI > 0 is masked. (by default, spei mask in uncommented)
 ~~~javascript
 var lagflag = 0; 
 var spei = spei11m.filterDate(date_start, date_end)
                   .map(function(image) {
-                    var speiMask = image.gte(0);
+                    var speiMask = image.lte(0);
                     return image.updateMask(speiMask);
                 }); // mask out spei
 ~~~
 Three layers will be displayed on the code editor interface:
-1) corrmap: Pearson correlation coefficient (R) of SPEI vs NDVI anomalies
-2) raster: color blue for areas with R > 0.3, color red for areas with R > 0.5.
-3) vector: shapefile converted from raster layer. It will be needed in the next step. (not displayed, you can uncomment it if needed)
-![screenshot](pic/corrmap.png)  
-You can export the correlation map and vector file for further analysis by running the task.
+1) correlation map: Pearson correlation coefficient (R) of SPEI vs NDVI anomalies, pixels with p-value  0.05 will be masked.
+2) mean annual precipitation
+3) mean annual temperature  
+You can export the correlation map for further analysis by running the task.
+
 ### 2.2 [SPEI vs NDVI MODIS Growing Season](https://github.com/fsn1995/Drought-Analysis/blob/master/SPEI%20vs%20NDVI%20MODIS%20Growth%20Season.js)
 This step correlates SPEI with NDVI anomalies in the selected month only.
 define the growth season (selected month of spei) here. e.g. the default setting is to correlate the SPEI in April in the study period with the NDVI anomalies.
@@ -52,8 +52,9 @@ Three time series plots of monthly average NDVI, NDVI anomaly and SPEI will be d
 The purpose of the script is to provide a quick access to the SPEI product.computes the differences of the annual average SPEI. Positive SPEI values are masked as it focuses on the drought period. The difference maps show the annual difference of drought. Each layer represents the difference between the annual average SPEI in that year and its previous years.  
 Optionally, the export of the differences maps and the display of time series of SPEI at the defined study site      
 
-# old scripts for the study in California
-![screenshot](pic/interface.png)
+# old scripts for the study in California 
+![screenshot](pic/interface.png)  
+(stopped updating after April 2019)
 ## 2. SPEI vs NDVI
 It exports and displays the correlation map of monthly SPEI vs the sum of coming three-month NDVI anomalies. The example in this script is studying California, 1984-2018. But it could also be applied to other areas by changing several lines of script.
 
