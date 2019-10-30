@@ -100,6 +100,10 @@ Map.addLayer(MATe, {min: -10, max: 30, palette: ['blue', 'green', 'red']},
 Map.addLayer(MAPr.updateMask(MAPr.gt(100)), {min: 100, max: 2000, palette: ['red', 'green', 'blue']}, 
     'mean annual precipitation');
 
+// load land cover data
+var lucc = ee.Image('ESA/GLOBCOVER_L4_200901_200912_V2_3').select('landcover');
+// var cropMask = lucc.eq(11).add(lucc.eq(14)).add(lucc.eq(20));
+var cropMask = lucc.eq(11);
 //------------------------------------------------------------------------//
 //                             computation
 //------------------------------------------------------------------------//
@@ -246,11 +250,11 @@ var NDVI3mLag_spei = ee.ImageCollection(lagLink.apply(NDVI_anomSumMLag.select('N
 var corrmap = NDVI3mLag_spei.reduce(ee.Reducer.pearsonsCorrelation())
                             .addBands(koppen)
                             .updateMask(MAPr.gt(100));
-var corrmap = NDVI3mLag_spei.reduce(ee.Reducer.pearsonsCorrelation())
-                            .addBands(koppen)
-                            .updateMask(MAPr.gt(100));
+
 var p = corrmap.select('p-value');
-corrmap = corrmap.updateMask(p.lte(0.05));
+corrmap = corrmap.updateMask(p.lte(0.05))
+                 .updateMask(cropMask.neq(0)); 
+                //  .updateMask(cropMask); // mask out non-cropland
                             // .addBands(landform.select('constant').rename('landform'));
 //                        //.addBands(lucc.select('landcover').rename('lucc'));
 // // var corrmap = NDVI_spei.reduce(ee.Reducer.spearmansCorrelation()).clip(roi);
@@ -342,9 +346,7 @@ print(chart);
 
 
 // some discarded script
-// load land cover data
-// var lucc = ee.Image('USGS/NLCD/NLCD2011').select('landcover');
-// var lucc = ee.Image('ESA/GLOBCOVER_L4_200901_200912_V2_3').select('landcover');
+
 // var lucc_names = ee.Dictionary.fromLists(
 //     ee.List(lucc.get('landcover_class_values')).map(ee.String),
 //     lucc.get('landcover_class_names')
